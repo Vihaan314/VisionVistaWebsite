@@ -124,6 +124,17 @@
                             </svg>
                         </span>
                     </li>
+                    <li>Singleton pattern: An EditorState class to keep track of the current image and effect history. 
+                        <span class="more-text">
+                            Every time an effect is applied, the UI is updated and the new image and effect history is stored in the EditorState. It is essential that there is only one instance of this class so that the most recent and important information, namely the current image and effect history is accessible to every class.
+                        </span>
+                        <span class="toggle-more" onclick="toggleReadMore(this)">
+                            <span class="toggle-text">Read More</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="arrow-icon">
+                                <path d="M470.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 256 265.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160zm-352 160l160-160c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L210.7 256 73.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0z"/>
+                            </svg>
+                        </span>
+                    </li>
                     <li>Command pattern: This provides the functionality to every feature, from an undo or redo to saving an image. 
                         <span class="more-text">
                             This is not the logic itself but the code that executes it in the form of an anonymous lambda expression. Each category of commands implements the Command interface. If this pattern was not used, lengthy ActionListeners would have been used in classes, cluttering them. Additionally, this interface allows for a factory pattern (below), so that any class can obtain a particular action.
@@ -147,9 +158,31 @@
                             </svg>
                         </span>
                     </li>
-                    <li>Singleton pattern: An EditorState class to keep track of the current image and effect history. 
+                    <li>Multithreading: Multithreading with <code>SwingWorker</code> allows Vision Vista to run a time-consuming background task on a separate thread to not freeze the GUI.
                         <span class="more-text">
-                            Every time an effect is applied, the UI is updated and the new image and effect history is stored in the EditorState. It is essential that there is only one instance of this class so that the most recent and important information, namely the current image and effect history is accessible to every class.
+                            This was an integral addition to Vision Vista, as a loading dialog opens, keeping the user active whenever applying an effect, using an AI feature, or loading some file.            
+                            This was done with a custom generic <code>TaskWithLoadingDialog&lt;T></code> class that takes in a: <br>
+                            &emsp; Callable&lt;T> - the background task <br>
+                            &emsp; Consumer&lt;T> - what to do if the background task was successfully completed. The consumer object allows us to obtain the return value of the callable if executed successfully <br>
+                            &emsp; Consumer&lt;Exception> - if an error occurs with the background task <br>
+                            A simple use of this is when generating a random effect:
+                            <pre>
+                                return () -> {
+                                    Callable<EffectTextBox> task = () -> {
+                                        this.effect = new RandomEffect().getRandomEffect();
+                                        imageDisplay.updateImageByEffect(effect);
+                                        stateBasedUIComponentGroup.updateAllUIFromState();
+                                        EffectTextBox randomEffectBox = new EffectTextBox(this.effect);
+                                        return randomEffectBox;
+                                    };
+                                    Consumer<EffectTextBox> onSuccess = EffectTextBox::show;
+                        
+                                    TaskWithLoadingDialog<EffectTextBox> taskWithLoadingDialog = new TaskWithLoadingDialog<>(null,
+                                            "Applying random effect. Please wait...", task, onSuccess, null);
+                                    taskWithLoadingDialog.execute();
+                                };
+                            </pre>
+                            Here, generating the random effect, applying it to the image, and creating the information dialog is done in the background. The EffectTextBox object is available to the onSuccess consumer, which makes it visible.
                         </span>
                         <span class="toggle-more" onclick="toggleReadMore(this)">
                             <span class="toggle-text">Read More</span>
@@ -183,24 +216,6 @@
                             </svg>
                         </span>
                     </li>
-                    <li>Builder: Vision Vista uses the builder pattern for structuring the creation of the correct Image Generation API call based on user preferences, such as the model type and quality. 
-                        <span class="more-text">
-                            I slightly modified the original concept to have the buildGeneration method, which not only creates the instance of the object, but also generates the image with that instance:
-                            <pre>
-                                ImageGenerationAI.builder()
-                                    .prompt(prompt)
-                                    .model(model)
-                                    .quality(quality)
-                                    .buildGeneration();
-                            </pre>
-                        </span>
-                        <span class="toggle-more" onclick="toggleReadMore(this)">
-                            <span class="toggle-text">Read More</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="arrow-icon">
-                                <path d="M470.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 256 265.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160zm-352 160l160-160c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L210.7 256 73.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0z"/>
-                            </svg>
-                        </span>
-                    </li>
                     <li>Templating pattern: Many effect categories in Vision Vista leverage the templating pattern. For each abstract super class (e.g. Distort), "template" methods - essentially the backbone of an algorithm - are defined, with only a single <code>protected int applyEffect(int red, int green, int blue, BufferedImage image, int x, int y)</code> method to be implemented by subclasses. 
                         <span class="more-text">
                             This ensures all subclasses follow a consistent algorithm while minimizing redundant code. If an effect requires a different algorithm, the subclass can simply override one of the template methods. Initially, I wasn't aware of this pattern; it was only after writing this code that I realized that my approach closely aligned with the description of the template pattern on Wikipedia (https://en.wikipedia.org/wiki/Template_method_pattern). Consider the Distort category of effects, we have a run method which loops through every pixel in the image, and runs these two simple lines of code:
@@ -217,6 +232,24 @@
                                 }
                             </pre>
                             Now, a subclass of Distort - ChromaticAberration - simply has to override the applyEffect method, avoiding writing the redundant loop code and code to create the new pixel value.                        
+                        </span>
+                        <span class="toggle-more" onclick="toggleReadMore(this)">
+                            <span class="toggle-text">Read More</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="arrow-icon">
+                                <path d="M470.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 256 265.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160zm-352 160l160-160c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L210.7 256 73.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0z"/>
+                            </svg>
+                        </span>
+                    </li>
+                    <li>Builder: Vision Vista uses the builder pattern for structuring the creation of the correct Image Generation API call based on user preferences, such as the model type and quality. 
+                        <span class="more-text">
+                            I slightly modified the original concept to have the buildGeneration method, which not only creates the instance of the object, but also generates the image with that instance:
+                            <pre>
+                                ImageGenerationAI.builder()
+                                    .prompt(prompt)
+                                    .model(model)
+                                    .quality(quality)
+                                    .buildGeneration();
+                            </pre>
                         </span>
                         <span class="toggle-more" onclick="toggleReadMore(this)">
                             <span class="toggle-text">Read More</span>

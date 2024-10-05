@@ -68,7 +68,7 @@ html, body {
 
 .icon:hover {
     transition: transform 0.3s ease;
-    transform: scale(1.2);
+    transform: scale(1.1);
 }
 
 @keyframes titleFadeIn {
